@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>미니 게임 천국 (3-in-1 Arcade)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0F172A 0%, #1E1B4B 50%, #311042 100%);
+            color: #F8FAFC;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .arcade-container {
+            background-color: #1E293B;
+            padding: 25px;
+            border-radius: 28px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            border: 2px solid #334155;
+            text-align: center;
+            position: relative;
+            max-width: 520px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #38BDF8;
+            font-size: 2rem;
+            margin-bottom: 15px;
+            text-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+        }
+
+        .game-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            background-color: #0F172A;
+            padding: 6px;
+            border-radius: 16px;
+            border: 1px solid #334155;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background-color: transparent;
+            color: #94A3B8;
+            border: none;
+            padding: 10px 8px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            background-color: #38BDF8;
+            color: #0F172A;
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+        }
+
+        .status-board {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background-color: #0F172A;
+            padding: 10px 15px;
+            border-radius: 14px;
+            margin-bottom: 15px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #CBD5E1;
+            border: 1px solid #334155;
+        }
+
+        .status-board span {
+            color: #FACC15;
+            font-size: 1.1rem;
+        }
+
+        /* 난이도 선택 토글 */
+        .mode-select-box {
+            display: none;
+            gap: 10px;
+            margin-bottom: 15px;
+            justify-content: center;
+        }
+
+        .mode-btn {
+            background-color: #0F172A;
+            color: #94A3B8;
+            border: 1px solid #334155;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active.easy {
+            background-color: #22C55E;
+            color: #0F172A;
+        }
+
+        .mode-btn.active.hard {
+            background-color: #EF4444;
+            color: #F8FAFC;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            width: 400px;
+            margin: 0 auto;
+        }
+
+        canvas#gameCanvas {
+            background-color: #0F172A;
+            border: 3px solid #334155;
+            border-radius: 16px;
+            display: block;
+            touch-action: none;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        .next-preview-box {
+            display: none;
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 2px solid #334155;
+            border-radius: 12px;
+            padding: 6px;
+            text-align: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .next-preview-box span {
+            font-size: 0.75rem;
+            color: #94A3B8;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .controls-info {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: #94A3B8;
+            line-height: 1.5;
+            background-color: #0F172A;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+        }
+
+        .touch-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 15px;
+            max-width: 280px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .ctrl-btn {
+            background-color: #334155;
+            color: #F8FAFC;
+            border: 1px solid #475569;
+            padding: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 12px;
+            user-select: none;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .ctrl-btn:active {
+            background-color: #38BDF8;
+            color: #0F172A;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            border-radius: 28px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 25px;
+            backdrop-filter: blur(6px);
+            z-index: 10;
+        }
+
+        .overlay h2 {
+            font-size: 2rem;
+            color: #38BDF8;
+            margin-bottom: 10px;
+        }
+
+        .overlay p {
+            font-size: 1.05rem;
+            color: #CBD5E1;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            word-break: keep-all;
+        }
+
+        .btn {
+            background-color: #38BDF8;
+            color: #0F172A;
+            border: none;
+            padding: 12px 28px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+        }
+
+        .btn:hover {
+            background-color: #0EA5E9;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="arcade-container">
+        <h1>🕹️ 종합 미니 게임 천국</h1>
+
+        <div class="game-tabs">
+            <button class="tab-btn active" onclick="switchGame('bounce')">⚽ 바운스볼</button>
+            <button class="tab-btn" onclick="switchGame('tetris')">🧩 테트리스</button>
+            <button class="tab-btn" onclick="switchGame('parking')">🚗 주차 게임</button>
+        </div>
+
+        <!-- 주차 난이도 선택 버튼 -->
+        <div class="mode-select-box" id="modeSelectBox">
+            <button class="mode-btn active easy" onclick="setParkingMode('easy')">🟢 쉬움 모드</button>
+            <button class="mode-btn hard" onclick="setParkingMode('hard')">🔴 하드 모드</button>
+        </div>
+
+        <div class="status-board" id="statusBoard"></div>
+
+        <div class="canvas-wrapper">
+            <canvas id="gameCanvas" width="400" height="440"></canvas>
+            
+            <div class="next-preview-box" id="nextPreviewBox">
+                <span>NEXT</span>
+                <canvas id="nextCanvas" width="80" height="80"></canvas>
+            </div>
+        </div>
+
+        <div class="controls-info" id="controlsInfo"></div>
+
+        <div class="touch-controls" id="touchControls">
+            <div></div>
+            <button class="ctrl-btn" id="btnUp">▲</button>
+            <div></div>
+            <button class="ctrl-btn" id="btnLeft">◄</button>
+            <button class="ctrl-btn" id="btnDown">▼</button>
+            <button class="ctrl-btn" id="btnRight">►</button>
+        </div>
+
+        <div id="gameOverlay" class="overlay">
+            <h2 id="overlayTitle">미니 게임 선택</h2>
+            <p id="overlayText">게임 탭을 고르고 시작 버튼을 누르세요!</p>
+            <button class="btn" id="startBtn" onclick="startGame()">게임 시작</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const nextCanvas = document.getElementById('nextCanvas');
+        const nextCtx = nextCanvas.getContext('2d');
+        const nextPreviewBox = document.getElementById('nextPreviewBox');
+        const modeSelectBox = document.getElementById('modeSelectBox');
+
+        const statusBoard = document.getElementById('statusBoard');
+        const controlsInfo = document.getElementById('controlsInfo');
+        const overlay = document.getElementById('gameOverlay');
+        const overlayTitle = document.getElementById('overlayTitle');
+        const overlayText = document.getElementById('overlayText');
+        const startBtn = document.getElementById('startBtn');
+
+        let currentGame = 'bounce';
+        let isGameRunning = false;
+        let animationId = null;
+
+        const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, Space: false };
+
+        window.addEventListener('keydown', e => {
+            if (e.code === 'Space') keys.Space = true;
+            if (keys.hasOwnProperty(e.key)) keys[e.key] = true;
+            if (currentGame === 'tetris' && isGameRunning) handleTetrisInput(e.key);
+        });
+        window.addEventListener('keyup', e => {
+            if (e.code === 'Space') keys.Space = false;
+            if (keys.hasOwnProperty(e.key)) keys[e.key] = false;
+        });
+
+        function bindTouch(id, key) {
+            const btn = document.getElementById(id);
+            const start = (e) => {
+                e.preventDefault();
+                keys[key] = true;
+                if (currentGame === 'tetris' && isGameRunning) handleTetrisInput(key);
+            };
+            const end = (e) => { e.preventDefault(); keys[key] = false; };
+            btn.addEventListener('touchstart', start);
+            btn.addEventListener('touchend', end);
+            btn.addEventListener('mousedown', start);
+            btn.addEventListener('mouseup', end);
+            btn.addEventListener('mouseleave', end);
+        }
+        bindTouch('btnUp', 'ArrowUp');
+        bindTouch('btnDown', 'ArrowDown');
+        bindTouch('btnLeft', 'ArrowLeft');
+        bindTouch('btnRight', 'ArrowRight');
+
+        canvas.addEventListener('mousemove', e => {
+            if (currentGame === 'bounce' && isGameRunning) {
+                const rect = canvas.getBoundingClientRect();
+                bounceState.paddle.x = e.clientX - rect.left - bounceState.paddle.width / 2;
+            }
+        });
+        canvas.addEventListener('touchmove', e => {
+            if (currentGame === 'bounce' && isGameRunning) {
+                const rect = canvas.getBoundingClientRect();
+                bounceState.paddle.x = e.touches[0].clientX - rect.left - bounceState.paddle.width / 2;
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        function switchGame(gameType) {
+            currentGame = gameType;
+            isGameRunning = false;
+            if (animationId) cancelAnimationFrame(animationId);
+            if (tetrisState.timer) clearInterval(tetrisState.timer);
+
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            nextPreviewBox.style.display = (gameType === 'tetris') ? 'block' : 'none';
+            modeSelectBox.style.display = (gameType === 'parking') ? 'flex' : 'none';
+
+            initGameUI();
+            overlay.style.display = 'flex';
+            
+            if (gameType === 'bounce') {
+                overlayTitle.innerText = "⚽ 바운스볼";
+                overlayText.innerHTML = "공을 튕겨내며 바닥에 떨어지지 않게 막아내세요!";
+            } else if (gameType === 'tetris') {
+                overlayTitle.innerText = "🧩 테트리스";
+                overlayText.innerHTML = "다음 등장할 블록을 확인하며 깔끔하게 줄을 없애보세요!";
+            } else if (gameType === 'parking') {
+                overlayTitle.innerText = "🚗 주차 게임";
+                overlayText.innerHTML = "쉬움 모드와 하드 모드를 지원합니다.<br>하드 모드는 단계별 속도 증가와 좁은 주차 구역이 적용됩니다!";
+            }
+            startBtn.innerText = "게임 시작";
+        }
+
+        function initGameUI() {
+            if (currentGame === 'bounce') {
+                statusBoard.innerHTML = `<div>점수: <span id="score">0</span>점</div><div>최고 점수: <span id="highScore">${bounceState.highScore}</span>점</div>`;
+                controlsInfo.innerHTML = `🎮 <b>방향키 (←/→)</b> 또는 마우스/터치로 받침대를 움직여 공을 튕겨내세요!`;
+            } else if (currentGame === 'tetris') {
+                statusBoard.innerHTML = `<div>점수: <span id="score">0</span>점</div><div>줄 제거: <span id="lines">0</span></div>`;
+                controlsInfo.innerHTML = `🎮 <b>←/→</b>: 이동 | <b>▲</b>: 회전 | <b>▼</b>: 빠른 하강 | <b>Space</b>: 즉시 하강`;
+            } else if (currentGame === 'parking') {
+                const modeName = parkingMode === 'easy' ? '쉬움' : '하드';
+                statusBoard.innerHTML = `<div>모드: <span>${modeName}</span></div><div>단계: <span id="level">1</span>/10</div><div>속도: <span id="spd">1.0x</span></div><div>시간: <span id="timer">0.0</span>s</div>`;
+                controlsInfo.innerHTML = `🎮 <b>▲</b>: 전진 | <b>▼</b>: 후진 | <b>◄/►</b>: 조향<br>넉넉해진 주차 판정! 녹색 영역에 차를 완전히 멈추면 성공합니다.`;
+            }
+        }
+
+        function startGame() {
+            overlay.style.display = 'none';
+            isGameRunning = true;
+
+            if (currentGame === 'bounce') startBounce();
+            else if (currentGame === 'tetris') startTetris();
+            else if (currentGame === 'parking') {
+                parkingLevel = 1;
+                parkingAccumulatedTime = 0;
+                startParkingLevel();
+            }
+        }
+
+        function gameOver(msg, scoreInfo) {
+            isGameRunning = false;
+            if (animationId) cancelAnimationFrame(animationId);
+            if (tetrisState.timer) clearInterval(tetrisState.timer);
+
+            overlayTitle.innerText = "💥 게임 오버!";
+            overlayText.innerHTML = `${msg}<br>${scoreInfo}`;
+            startBtn.innerText = "다시 도전하기";
+            overlay.style.display = 'flex';
+        }
+
+        /* 1. 바운스볼 로직 */
+        const bounceState = {
+            score: 0,
+            highScore: 0,
+            ball: { x: 200, y: 80, radius: 10, dx: 3.5, dy: 4.5 },
+            paddle: { width: 85, height: 14, x: 157.5, y: 400, dx: 7 }
+        };
+
+        function startBounce() {
+            bounceState.score = 0;
+            bounceState.ball.x = canvas.width / 2;
+            bounceState.ball.y = 80;
+            bounceState.ball.dx = (Math.random() > 0.5 ? 1 : -1) * 3.5;
+            bounceState.ball.dy = 4.5;
+            bounceState.paddle.x = (canvas.width - bounceState.paddle.width) / 2;
+            updateBounce();
+        }
+
+        function updateBounce() {
+            if (!isGameRunning || currentGame !== 'bounce') return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.beginPath();
+            ctx.arc(bounceState.ball.x, bounceState.ball.y, bounceState.ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#FF477E';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.roundRect(bounceState.paddle.x, bounceState.paddle.y, bounceState.paddle.width, bounceState.paddle.height, 8);
+            ctx.fillStyle = '#38BDF8';
+            ctx.fill();
+
+            const b = bounceState.ball;
+            const p = bounceState.paddle;
+
+            if (b.x + b.dx > canvas.width - b.radius || b.x + b.dx < b.radius) b.dx = -b.dx;
+            if (b.y + b.dy < b.radius) b.dy = -b.dy;
+            else if (b.y + b.dy > p.y - b.radius) {
+                if (b.x > p.x && b.x < p.x + p.width) {
+                    let hit = b.x - (p.x + p.width / 2);
+                    b.dx = hit * 0.15;
+                    b.dy = -Math.abs(b.dy);
+                    bounceState.score += 10;
+                    document.getElementById('score').innerText = bounceState.score;
+                } else if (b.y + b.radius >= canvas.height) {
+                    if (bounceState.score > bounceState.highScore) bounceState.highScore = bounceState.score;
+                    gameOver("공이 바닥에 닿았습니다!", `최종 점수: <b>${bounceState.score}점</b>`);
+                    return;
+                }
+            }
+
+            if (keys.ArrowRight && p.x < canvas.width - p.width) p.x += p.dx;
+            if (keys.ArrowLeft && p.x > 0) p.x -= p.dx;
+
+            b.x += b.dx;
+            b.y += b.dy;
+
+            animationId = requestAnimationFrame(updateBounce);
+        }
+
+        /* 2. 테트리스 로직 */
+        const COLS = 10, ROWS = 20, BLOCK = 22;
+        const SHAPES = [[],[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]],[[0,1,1],[1,0,0]],[[1,1,0],[0,1,1]]];
+        const COLORS = ['', '#00F0FF', '#FFD700', '#A000FF', '#FF8C00', '#0000FF', '#00FF00', '#FF0000'];
+
+        let tetrisBoard = [];
+        const tetrisState = { score: 0, lines: 0, piece: null, nextPiece: null, timer: null };
+
+        function getRandomPiece() {
+            const id = Math.floor(Math.random() * 7) + 1;
+            return { shape: SHAPES[id], color: COLORS[id], x: 3, y: 0 };
+        }
+
+        function startTetris() {
+            tetrisBoard = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+            tetrisState.score = 0;
+            tetrisState.lines = 0;
+            tetrisState.nextPiece = getRandomPiece();
+            spawnTetrisPiece();
+            if (tetrisState.timer) clearInterval(tetrisState.timer);
+            tetrisState.timer = setInterval(dropTetris, 600);
+            renderTetris();
+        }
+
+        function spawnTetrisPiece() {
+            tetrisState.piece = tetrisState.nextPiece;
+            tetrisState.nextPiece = getRandomPiece();
+            renderNextPiece();
+            if (checkTetrisCollide(0, 0)) {
+                gameOver("블록이 가득 찼습니다!", `최종 점수: <b>${tetrisState.score}점</b>`);
+            }
+        }
+
+        function renderNextPiece() {
+            nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+            const np = tetrisState.nextPiece;
+            if (!np) return;
+
+            const pBlock = 16;
+            const shape = np.shape;
+            const offsetX = (nextCanvas.width - shape[0].length * pBlock) / 2;
+            const offsetY = (nextCanvas.height - shape.length * pBlock) / 2;
+
+            nextCtx.fillStyle = np.color;
+            for (let r = 0; r < shape.length; r++) {
+                for (let c = 0; c < shape[r].length; c++) {
+                    if (shape[r][c]) {
+                        nextCtx.fillRect(offsetX + c * pBlock, offsetY + r * pBlock, pBlock - 1, pBlock - 1);
+                    }
+                }
+            }
+        }
+
+        function checkTetrisCollide(offsetX, offsetY, shape = tetrisState.piece.shape) {
+            for (let r = 0; r < shape.length; r++) {
+                for (let c = 0; c < shape[r].length; c++) {
+                    if (shape[r][c]) {
+                        let newX = tetrisState.piece.x + c + offsetX;
+                        let newY = tetrisState.piece.y + r + offsetY;
+                        if (newX < 0 || newX >= COLS || newY >= ROWS) return true;
+                        if (newY >= 0 && tetrisBoard[newY][newX]) return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function handleTetrisInput(key) {
+            if (!isGameRunning || currentGame !== 'tetris') return;
+            if (key === 'ArrowLeft' && !checkTetrisCollide(-1, 0)) tetrisState.piece.x--;
+            if (key === 'ArrowRight' && !checkTetrisCollide(1, 0)) tetrisState.piece.x++;
+            if (key === 'ArrowDown') dropTetris();
+            if (key === 'ArrowUp') rotateTetris();
+            if (key === 'Space' || key === ' ') {
+                while (!checkTetrisCollide(0, 1)) tetrisState.piece.y++;
+                dropTetris();
+            }
+            renderTetris();
+        }
+
+        function rotateTetris() {
+            const rotated = tetrisState.piece.shape[0].map((_, i) =>
+                tetrisState.piece.shape.map(row => row[i]).reverse()
+            );
+            if (!checkTetrisCollide(0, 0, rotated)) {
+                tetrisState.piece.shape = rotated;
+            }
+        }
+
+        function dropTetris() {
+            if (!checkTetrisCollide(0, 1)) {
+                tetrisState.piece.y++;
+            } else {
+                const p = tetrisState.piece;
+                for (let r = 0; r < p.shape.length; r++) {
+                    for (let c = 0; c < p.shape[r].length; c++) {
+                        if (p.shape[r][c] && p.y + r >= 0) {
+                            tetrisBoard[p.y + r][p.x + c] = p.color;
+                        }
+                    }
+                }
+                let linesCleared = 0;
+                for (let r = ROWS - 1; r >= 0; r--) {
+                    if (tetrisBoard[r].every(cell => cell !== 0)) {
+                        tetrisBoard.splice(r, 1);
+                        tetrisBoard.unshift(Array(COLS).fill(0));
+                        linesCleared++;
+                        r++;
+                    }
+                }
+                if (linesCleared > 0) {
+                    tetrisState.lines += linesCleared;
+                    tetrisState.score += linesCleared * 100;
+                    document.getElementById('score').innerText = tetrisState.score;
+                    document.getElementById('lines').innerText = tetrisState.lines;
+                }
+                spawnTetrisPiece();
+            }
+            renderTetris();
+        }
+
+        function renderTetris() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const offsetX = (canvas.width - COLS * BLOCK) / 2;
+
+            ctx.fillStyle = '#1E293B';
+            ctx.fillRect(offsetX, 0, COLS * BLOCK, ROWS * BLOCK);
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (tetrisBoard[r][c]) {
+                        ctx.fillStyle = tetrisBoard[r][c];
+                        ctx.fillRect(offsetX + c * BLOCK, r * BLOCK, BLOCK - 1, BLOCK - 1);
+                    }
+                }
+            }
+
+            if (tetrisState.piece) {
+                const p = tetrisState.piece;
+                ctx.fillStyle = p.color;
+                for (let r = 0; r < p.shape.length; r++) {
+                    for (let c = 0; c < p.shape[r].length; c++) {
+                        if (p.shape[r][c]) {
+                            ctx.fillRect(offsetX + (p.x + c) * BLOCK, (p.y + r) * BLOCK, BLOCK - 1, BLOCK - 1);
+                        }
+                    }
+                }
+            }
+        }
+
+        /* 3. 주차 게임 로직 (쉬움/하드 난이도, 속도 증가, 정밀+너그러운 주차 판정) */
+        let parkingLevel = 1;
+        let parkingMode = 'easy'; // 'easy' or 'hard'
+        let parkingLevelStartTime = 0;
+        let parkingAccumulatedTime = 0;
+        let isParkingCollided = false;
+
+        const car = {
+            x: 0, y: 0,
+            width: 22, height: 42,
+            angle: 0, speed: 0,
+            maxSpeed: 2.8, accel: 0.12, friction: 0.05, turnSpeed: 0.045
+        };
+
+        const parkingLevels = [
+            { start: { x: 200, y: 380, angle: -Math.PI/2 }, park: { x: 160, y: 40, w: 80, h: 70 }, walls: [], obs: [] },
+            { start: { x: 80, y: 380, angle: -Math.PI/2 }, park: { x: 275, y: 175, w: 75, h: 80 }, walls: [{x:180, y:120, w:20, h:200}], obs: [{x:285, y:70, w:22, h:42, color: '#DC2626'}, {x:285, y:290, w:22, h:42, color: '#475569'}] },
+            { start: { x: 60, y: 380, angle: -Math.PI/2 }, park: { x: 295, y: 45, w: 80, h: 70 }, walls: [{x:0, y:150, w:280, h:15}, {x:120, y:270, w:280, h:15}], obs: [] },
+            { start: { x: 200, y: 380, angle: -Math.PI/2 }, park: { x: 40, y: 35, w: 75, h: 80 }, walls: [{x:140, y:0, w:15, h:280}], obs: [{x:48, y:160, w:22, h:42, color: '#DC2626'}] },
+            { start: { x: 50, y: 380, angle: 0 }, park: { x: 305, y: 315, w: 75, h: 80 }, walls: [{x:120, y:0, w:15, h:300}, {x:240, y:100, w:15, h:340}], obs: [{x:315, y:210, w:22, h:42, color: '#475569'}] },
+            { start: { x: 50, y: 50, angle: 0 }, park: { x: 305, y: 355, w: 80, h: 70 }, walls: [{x:0, y:120, w:300, h:15}], obs: [{x:180, y:240, w:22, h:42, color: '#E11D48'}, {x:220, y:240, w:22, h:42, color: '#2563EB'}] },
+            { start: { x: 350, y: 380, angle: -Math.PI/2 }, park: { x: 35, y: 45, w: 75, h: 80 }, walls: [{x:100, y:100, w:200, h:15}, {x:100, y:250, w:200, h:15}], obs: [{x:48, y:200, w:22, h:42, color: '#DC2626'}] },
+            { start: { x: 200, y: 220, angle: 0 }, park: { x: 305, y: 35, w: 75, h: 80 }, walls: [{x:80, y:0, w:15, h:160}, {x:280, y:160, w:15, h:280}], obs: [{x:315, y:140, w:22, h:42, color: '#475569'}, {x:150, y:320, w:22, h:42, color: '#059669'}] },
+            { start: { x: 50, y: 380, angle: -Math.PI/2 }, park: { x: 165, y: 175, w: 75, h: 80 }, walls: [{x:130, y:120, w:15, h:200}, {x:250, y:120, w:15, h:200}, {x:130, y:120, w:135, h:15}], obs: [{x:172, y:280, w:22, h:42, color: '#DC2626'}] },
+            { start: { x: 40, y: 380, angle: -Math.PI/2 }, park: { x: 310, y: 35, w: 75, h: 80 }, walls: [{x:100, y:0, w:15, h:320}, {x:200, y:100, w:15, h:340}, {x:300, y:0, w:15, h:320}], obs: [{x:317, y:150, w:22, h:42, color: '#9333EA'}, {x:317, y:250, w:22, h:42, color: '#EA580C'}] }
+        ];
+
+        function setParkingMode(mode) {
+            parkingMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            if (mode === 'easy') {
+                document.querySelector('.mode-btn.easy').classList.add('active');
+            } else {
+                document.querySelector('.mode-btn.hard').classList.add('active');
+            }
+            initGameUI();
+            if (currentGame === 'parking' && isGameRunning) {
+                parkingLevel = 1;
+                parkingAccumulatedTime = 0;
+                startParkingLevel();
+            }
+        }
+
+        function startParkingLevel() {
+            const lvl = parkingLevels[parkingLevel - 1];
+            car.x = lvl.start.x;
+            car.y = lvl.start.y;
+            car.angle = lvl.start.angle;
+            car.speed = 0;
+
+            // 하드 모드: 단계가 올라갈 때마다 최고 속도가 +0.1씩 증가
+            const speedMultiplier = (parkingMode === 'hard') ? (1.0 + (parkingLevel - 1) * 0.1) : 1.0;
+            car.maxSpeed = 2.8 * speedMultiplier;
+
+            isParkingCollided = false;
+
+            document.getElementById('level').innerText = parkingLevel;
+            document.getElementById('spd').innerText = speedMultiplier.toFixed(1) + 'x';
+            parkingLevelStartTime = Date.now();
+            updateParking();
+        }
+
+        function getCarCorners(targetCar = car, inset = 2) {
+            const cos = Math.cos(targetCar.angle), sin = Math.sin(targetCar.angle);
+            const hw = (targetCar.width - inset * 2) / 2;
+            const hh = (targetCar.height - inset * 2) / 2;
+            return [
+                { x: targetCar.x + (-hw * cos - -hh * sin), y: targetCar.y + (-hw * sin + -hh * cos) },
+                { x: targetCar.x + (hw * cos - -hh * sin), y: targetCar.y + (hw * sin + -hh * cos) },
+                { x: targetCar.x + (hw * cos - hh * sin), y: targetCar.y + (hw * sin + hh * cos) },
+                { x: targetCar.x + (-hw * cos - hh * sin), y: targetCar.y + (-hw * sin + hh * cos) }
+            ];
+        }
+
+        function checkRectOverlap(rect, corners) {
+            for (let p of corners) {
+                if (p.x >= rect.x && p.x <= rect.x + (rect.w || rect.width) &&
+                    p.y >= rect.y && p.y <= rect.y + (rect.h || rect.height)) return true;
+            }
+            return false;
+        }
+
+        function checkCarToCarCollision(c1, c2) {
+            const dist = Math.hypot(c1.x - c2.x, c1.y - c2.y);
+            if (dist > 50) return false;
+
+            const c1Corners = getCarCorners(c1, 2);
+            const c2Rect = { x: c2.x - c2.width/2 + 2, y: c2.y - c2.height/2 + 2, w: c2.width - 4, h: c2.height - 4 };
+            return checkRectOverlap(c2Rect, c1Corners);
+        }
+
+        function triggerParkingReset() {
+            if (isParkingCollided) return;
+            isParkingCollided = true;
+
+            parkingAccumulatedTime += (Date.now() - parkingLevelStartTime) / 1000;
+
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            setTimeout(() => {
+                if (currentGame === 'parking' && isGameRunning) {
+                    startParkingLevel();
+                }
+            }, 200);
+        }
+
+        function drawDetailedCar(x, y, w, h, angle, bodyColor) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+
+            const hw = w / 2;
+            const hh = h / 2;
+
+            ctx.fillStyle = '#0F172A';
+            ctx.fillRect(-hw - 1, -hh + 5, 2, 8);
+            ctx.fillRect(hw - 1, -hh + 5, 2, 8);
+            ctx.fillRect(-hw - 1, hh - 13, 2, 8);
+            ctx.fillRect(hw - 1, hh - 13, 2, 8);
+
+            ctx.fillStyle = bodyColor;
+            ctx.beginPath();
+            ctx.roundRect(-hw, -hh, w, h, 5);
+            ctx.fill();
+
+            ctx.fillStyle = '#1E293B';
+            ctx.beginPath();
+            ctx.roundRect(-hw + 2, -hh + 10, w - 4, h - 20, 3);
+            ctx.fill();
+
+            ctx.fillStyle = '#38BDF8';
+            ctx.beginPath();
+            ctx.roundRect(-hw + 3, -hh + 8, w - 6, 6, 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#0284C7';
+            ctx.beginPath();
+            ctx.roundRect(-hw + 3, hh - 13, w - 6, 4, 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#FEF08A';
+            ctx.fillRect(-hw + 2, -hh, 4, 2);
+            ctx.fillRect(hw - 6, -hh, 4, 2);
+
+            ctx.fillStyle = '#EF4444';
+            ctx.fillRect(-hw + 2, hh - 2, 4, 2);
+            ctx.fillRect(hw - 6, hh - 2, 4, 2);
+
+            ctx.restore();
+        }
+
+        function updateParking() {
+            if (!isGameRunning || currentGame !== 'parking' || isParkingCollided) return;
+
+            const lvl = parkingLevels[parkingLevel - 1];
+
+            if (keys.ArrowUp) car.speed += car.accel;
+            else if (keys.ArrowDown) car.speed -= car.accel;
+            else {
+                if (car.speed > 0) car.speed = Math.max(0, car.speed - car.friction);
+                else if (car.speed < 0) car.speed = Math.min(0, car.speed + car.friction);
+            }
+
+            car.speed = Math.max(-car.maxSpeed * 0.6, Math.min(car.maxSpeed, car.speed));
+
+            if (Math.abs(car.speed) > 0.05) {
+                const dir = car.speed > 0 ? 1 : -1;
+                if (keys.ArrowLeft) car.angle -= car.turnSpeed * dir;
+                if (keys.ArrowRight) car.angle += car.turnSpeed * dir;
+            }
+
+            car.x += Math.cos(car.angle) * car.speed;
+            car.y += Math.sin(car.angle) * car.speed;
+
+            const currentLevelTime = (Date.now() - parkingLevelStartTime) / 1000;
+            const totalTime = (parkingAccumulatedTime + currentLevelTime).toFixed(1);
+            document.getElementById('timer').innerText = totalTime;
+
+            const corners = getCarCorners(car, 2);
+
+            // 1. 외곽 벽 충돌
+            for (let c of corners) {
+                if (c.x < 0 || c.x > canvas.width || c.y < 0 || c.y > canvas.height) {
+                    triggerParkingReset();
+                    return;
+                }
+            }
+
+            // 2. 장애물 벽 충돌
+            for (let w of lvl.walls) {
+                if (checkRectOverlap(w, corners)) {
+                    triggerParkingReset();
+                    return;
+                }
+            }
+
+            // 3. 다른 정차 차량 충돌
+            for (let obs of lvl.obs) {
+                const obsCar = { x: obs.x + obs.w/2, y: obs.y + obs.h/2, width: obs.w, height: obs.h, angle: 0 };
+                if (checkCarToCarCollision(car, obsCar)) {
+                    triggerParkingReset();
+                    return;
+                }
+            }
+
+            // 하드 모드일 때 골인 지점 크기를 줄임 (가로세로 -14px)
+            let parkW = lvl.park.w;
+            let parkH = lvl.park.h;
+            let parkX = lvl.park.x;
+            let parkY = lvl.park.y;
+
+            if (parkingMode === 'hard') {
+                parkW -= 14;
+                parkH -= 14;
+                parkX += 7;
+                parkY += 7;
+            }
+
+            // 주차 판정 완화 (너그러운 체크): 자동차의 중심점과 모서리가 주차 구역 안에 잘 들어왔는지 여부
+            // inset 판정을 +3px 더 허용하여 살짝 걸쳐도 성공으로 인정
+            const checkCorners = getCarCorners(car, 5); 
+            const inside = checkCorners.every(c => 
+                c.x >= parkX - 3 && c.x <= parkX + parkW + 3 && 
+                c.y >= parkY - 3 && c.y <= parkY + parkH + 3
+            );
+
+            if (inside && Math.abs(car.speed) < 0.25) {
+                parkingAccumulatedTime += currentLevelTime;
+                if (parkingLevel < 10) {
+                    parkingLevel++;
+                    startParkingLevel();
+                    return;
+                } else {
+                    const modeTxt = parkingMode === 'easy' ? '쉬움 모드' : '하드 모드';
+                    gameOver(`🏆 주차 게임 [${modeTxt}] 전 코스 클리어!`, `총 소요 시간: <b>${parkingAccumulatedTime.toFixed(1)}초</b>`);
+                    return;
+                }
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 주차 구역 그리기
+            ctx.fillStyle = parkingMode === 'hard' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(34, 197, 94, 0.2)';
+            ctx.strokeStyle = parkingMode === 'hard' ? '#EF4444' : '#22C55E';
+            ctx.lineWidth = 2;
+            ctx.fillRect(parkX, parkY, parkW, parkH);
+            ctx.strokeRect(parkX, parkY, parkW, parkH);
+
+            // 벽
+            ctx.fillStyle = '#475569';
+            for (let w of lvl.walls) ctx.fillRect(w.x, w.y, w.w, w.h);
+
+            // 장애물 차량
+            for (let obs of lvl.obs) {
+                drawDetailedCar(obs.x + obs.w/2, obs.y + obs.h/2, obs.w, obs.h, 0, obs.color || '#DC2626');
+            }
+
+            // 플레이어 차량
+            drawDetailedCar(car.x, car.y, car.width, car.height, car.angle + Math.PI / 2, '#38BDF8');
+
+            animationId = requestAnimationFrame(updateParking);
+        }
+
+        initGameUI();
+    </script>
+</body>
+</html>
